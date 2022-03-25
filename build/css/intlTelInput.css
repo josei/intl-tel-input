@@ -58,6 +58,11 @@
     @media (max-width: 500px) {
       .iti__country-list {
         white-space: normal; } }
+  .iti__country-search {
+    border-radius: 0;
+    margin-left: -1px !important;
+    outline: none;
+    padding-left: 37px !important; }
   .iti__flag-box {
     display: inline-block;
     width: 20px; }

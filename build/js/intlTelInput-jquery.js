@@ -111,7 +111,9 @@
         // display the country dial code next to the selected flag so it's not part of the typed number
         separateDialCode: false,
         // specify the path to the libphonenumber script to enable validation/formatting
-        utilsScript: ""
+        utilsScript: "",
+        // show input with query that filters the country list
+        queryInput: false
     };
     // https://en.wikipedia.org/wiki/List_of_North_American_Numbering_Plan_area_codes#Non-geographic_area_codes
     var regionlessNanpNumbers = [ "800", "822", "833", "844", "855", "866", "877", "880", "881", "882", "883", "884", "885", "886", "887", "888", "889" ];
@@ -388,6 +390,12 @@
                         role: "listbox",
                         "aria-label": "List of countries"
                     });
+                    if (this.options.queryInput) {
+                        this.queryInput = this._createEl("input", {
+                            "class": "iti__country-search iti__hide",
+                            "aria-disabled": "true"
+                        });
+                    }
                     if (this.preferredCountries.length) {
                         this._appendListItems(this.preferredCountries, "iti__preferred", true);
                         this._createEl("li", {
@@ -402,8 +410,10 @@
                         this.dropdown = this._createEl("div", {
                             "class": "iti iti--container"
                         });
+                        if (this.queryInput) this.dropdown.appendChild(this.queryInput);
                         this.dropdown.appendChild(this.countryList);
                     } else {
+                        if (this.queryInput) this.flagsContainer.appendChild(this.queryInput);
                         this.flagsContainer.appendChild(this.countryList);
                     }
                 }
@@ -663,7 +673,19 @@
         }, {
             key: "_showDropdown",
             value: function _showDropdown() {
+                var _this8 = this;
                 this.countryList.classList.remove("iti__hide");
+                this.countryList.focus();
+                if (this.queryInput) {
+                    this.queryInput.classList.remove("iti__hide");
+                    this.queryInput.setAttribute("value", "");
+                    this.queryInput.focus();
+                    setTimeout(function() {
+                        var w = _this8.countryList.offsetWidth;
+                        _this8.queryInput.style.width = "".concat(w, "px");
+                        _this8.queryInput.style.height = "30px";
+                    }, 1);
+                }
                 this.selectedFlag.setAttribute("aria-expanded", "true");
                 this._setDropdownPosition();
                 // update highlighting and scroll to active list item
@@ -685,7 +707,7 @@
         }, {
             key: "_setDropdownPosition",
             value: function _setDropdownPosition() {
-                var _this8 = this;
+                var _this9 = this;
                 if (this.options.dropdownContainer) {
                     this.options.dropdownContainer.appendChild(this.dropdown);
                 }
@@ -711,7 +733,7 @@
                         this.dropdown.style.left = "".concat(pos.left + document.body.scrollLeft, "px");
                         // close menu on window scroll
                         this._handleWindowScroll = function() {
-                            return _this8._closeDropdown();
+                            return _this9._closeDropdown();
                         };
                         window.addEventListener("scroll", this._handleWindowScroll);
                     }
@@ -730,19 +752,19 @@
         }, {
             key: "_bindDropdownListeners",
             value: function _bindDropdownListeners() {
-                var _this9 = this;
+                var _this10 = this;
                 // when mouse over a list item, just highlight that one
                 // we add the class "highlight", so if they hit "enter" we know which one to select
                 this._handleMouseoverCountryList = function(e) {
                     // handle event delegation, as we're listening for this event on the countryList
-                    var listItem = _this9._getClosestListItem(e.target);
-                    if (listItem) _this9._highlightListItem(listItem, false);
+                    var listItem = _this10._getClosestListItem(e.target);
+                    if (listItem) _this10._highlightListItem(listItem, false);
                 };
                 this.countryList.addEventListener("mouseover", this._handleMouseoverCountryList);
                 // listen for country selection
                 this._handleClickCountryList = function(e) {
-                    var listItem = _this9._getClosestListItem(e.target);
-                    if (listItem) _this9._selectListItem(listItem);
+                    var listItem = _this10._getClosestListItem(e.target);
+                    if (listItem) _this10._selectListItem(listItem);
                 };
                 this.countryList.addEventListener("click", this._handleClickCountryList);
                 // click off to close
@@ -750,7 +772,7 @@
                 // we cannot just stopPropagation as it may be needed to close another instance
                 var isOpening = true;
                 this._handleClickOffToClose = function() {
-                    if (!isOpening) _this9._closeDropdown();
+                    if (!isOpening) _this10._closeDropdown();
                     isOpening = false;
                 };
                 document.documentElement.addEventListener("click", this._handleClickOffToClose);
@@ -759,21 +781,35 @@
                 // just hit down and hold it to scroll down (no keyup event).
                 // listen on the document because that's where key events are triggered if no input has focus
                 var query = "";
+                var updateQuery = function updateQuery(q) {
+                    query = q;
+                    if (_this10.queryInput) {
+                        _this10.queryInput.setAttribute("value", query);
+                        _this10.queryInput.setSelectionRange(query.length, query.length);
+                    }
+                };
                 var queryTimer = null;
                 this._handleKeydownOnDropdown = function(e) {
                     // prevent down key from scrolling the whole page,
                     // and enter key from submitting a form etc
                     e.preventDefault();
                     // up and down to navigate
-                    if (e.key === "ArrowUp" || e.key === "Up" || e.key === "ArrowDown" || e.key === "Down") _this9._handleUpDownKey(e.key); else if (e.key === "Enter") _this9._handleEnterKey(); else if (e.key === "Escape") _this9._closeDropdown(); else if (/^[a-zA-ZÀ-ÿа-яА-Я ]$/.test(e.key)) {
+                    if (e.key === "ArrowUp" || e.key === "Up" || e.key === "ArrowDown" || e.key === "Down") _this10._handleUpDownKey(e.key); else if (e.key === "Enter") _this10._handleEnterKey(); else if (e.key === "Escape") _this10._closeDropdown(); else if (e.key === "Backspace") {
+                        updateQuery(query.slice(0, -1));
+                        _this10._searchForCountry(query);
+                    } else if (/^[a-zA-ZÀ-ÿа-яА-Я ]$/.test(e.key)) {
+                        // alpha chars to perform search
+                        // regex allows one latin alpha char or space, based on https://stackoverflow.com/a/26900132/217866)
                         // jump to countries that start with the query string
                         if (queryTimer) clearTimeout(queryTimer);
-                        query += e.key.toLowerCase();
-                        _this9._searchForCountry(query);
+                        updateQuery(query + e.key.toLowerCase());
+                        _this10._searchForCountry(query);
                         // if the timer hits 1 second, reset the query
-                        queryTimer = setTimeout(function() {
-                            query = "";
-                        }, 1e3);
+                        if (!_this10.queryInput) {
+                            queryTimer = setTimeout(function() {
+                                updateQuery("");
+                            }, 1e3);
+                        }
                     }
                 };
                 document.addEventListener("keydown", this._handleKeydownOnDropdown);
@@ -1012,6 +1048,7 @@
             key: "_closeDropdown",
             value: function _closeDropdown() {
                 this.countryList.classList.add("iti__hide");
+                if (this.queryInput) this.queryInput.classList.add("iti__hide");
                 this.selectedFlag.setAttribute("aria-expanded", "false");
                 // update the arrow
                 this.dropdownArrow.classList.remove("iti__arrow--up");

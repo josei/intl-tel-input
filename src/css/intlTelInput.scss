@@ -159,6 +159,13 @@ $mobilePopupMargin: 30px !default;
     -webkit-overflow-scrolling: touch;
   }
 
+  &__country-search {
+    border-radius: 0;
+    margin-left: -1px !important;
+    outline: none;
+    padding-left: 37px !important;
+  }
+
   // dropdown flags need consistent width, so wrap in a container
   &__flag-box {
     display: inline-block;

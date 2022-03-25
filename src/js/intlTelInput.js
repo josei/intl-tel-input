@@ -49,6 +49,8 @@ const defaults = {
   separateDialCode: false,
   // specify the path to the libphonenumber script to enable validation/formatting
   utilsScript: '',
+  // show input with query that filters the country list
+  queryInput: false,
 };
 // https://en.wikipedia.org/wiki/List_of_North_American_Numbering_Plan_area_codes#Non-geographic_area_codes
 const regionlessNanpNumbers = ['800', '822', '833', '844', '855', '866', '877', '880', '881', '882', '883', '884', '885', '886', '887', '888', '889'];
@@ -354,6 +356,14 @@ class Iti {
         role: 'listbox',
         'aria-label': 'List of countries',
       });
+
+      if (this.options.queryInput) {
+        this.queryInput = this._createEl('input', {
+          class: 'iti__country-search iti__hide',
+          'aria-disabled': 'true',
+        });
+      }
+
       if (this.preferredCountries.length) {
         this._appendListItems(this.preferredCountries, 'iti__preferred', true);
         this._createEl('li', {
@@ -367,8 +377,10 @@ class Iti {
       // create dropdownContainer markup
       if (this.options.dropdownContainer) {
         this.dropdown = this._createEl('div', { class: 'iti iti--container' });
+        if (this.queryInput) this.dropdown.appendChild(this.queryInput);
         this.dropdown.appendChild(this.countryList);
       } else {
+        if (this.queryInput) this.flagsContainer.appendChild(this.queryInput);
         this.flagsContainer.appendChild(this.countryList);
       }
     }
@@ -659,6 +671,17 @@ class Iti {
   // show the dropdown
   _showDropdown() {
     this.countryList.classList.remove('iti__hide');
+    this.countryList.focus();
+    if (this.queryInput) {
+      this.queryInput.classList.remove('iti__hide');
+      this.queryInput.setAttribute('value', '');
+      this.queryInput.focus();
+      setTimeout(() => {
+        const w = this.countryList.offsetWidth;
+        this.queryInput.style.width = `${w}px`;
+        this.queryInput.style.height = '30px';
+      }, 1);
+    }
     this.selectedFlag.setAttribute('aria-expanded', 'true');
 
     this._setDropdownPosition();
@@ -767,6 +790,13 @@ class Iti {
     // just hit down and hold it to scroll down (no keyup event).
     // listen on the document because that's where key events are triggered if no input has focus
     let query = '';
+    const updateQuery = (q) => {
+      query = q;
+      if (this.queryInput) {
+        this.queryInput.setAttribute('value', query);
+        this.queryInput.setSelectionRange(query.length, query.length);
+      }
+    };
     let queryTimer = null;
     this._handleKeydownOnDropdown = (e) => {
       // prevent down key from scrolling the whole page,
@@ -779,17 +809,24 @@ class Iti {
       else if (e.key === 'Enter') this._handleEnterKey();
       // esc to close
       else if (e.key === 'Escape') this._closeDropdown();
-      // alpha chars to perform search
-      // regex allows one latin alpha char or space, based on https://stackoverflow.com/a/26900132/217866)
-      else if (/^[a-zA-ZÀ-ÿа-яА-Я ]$/.test(e.key)) {
+      // backspace to delete
+      else if (e.key === 'Backspace') {
+        updateQuery(query.slice(0, -1));
+        this._searchForCountry(query);
+      } else if (/^[a-zA-ZÀ-ÿа-яА-Я ]$/.test(e.key)) {
+        // alpha chars to perform search
+        // regex allows one latin alpha char or space, based on https://stackoverflow.com/a/26900132/217866)
+
         // jump to countries that start with the query string
         if (queryTimer) clearTimeout(queryTimer);
-        query += e.key.toLowerCase();
+        updateQuery(query + e.key.toLowerCase());
         this._searchForCountry(query);
         // if the timer hits 1 second, reset the query
-        queryTimer = setTimeout(() => {
-          query = '';
-        }, 1000);
+        if (!this.queryInput) {
+          queryTimer = setTimeout(() => {
+            updateQuery('');
+          }, 1000);
+        }
       }
     };
     document.addEventListener('keydown', this._handleKeydownOnDropdown);
@@ -1070,6 +1107,7 @@ class Iti {
   // close the dropdown and unbind any listeners
   _closeDropdown() {
     this.countryList.classList.add('iti__hide');
+    if (this.queryInput) this.queryInput.classList.add('iti__hide');
     this.selectedFlag.setAttribute('aria-expanded', 'false');
     // update the arrow
     this.dropdownArrow.classList.remove('iti__arrow--up');
