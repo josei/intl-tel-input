@@ -113,7 +113,9 @@
         // specify the path to the libphonenumber script to enable validation/formatting
         utilsScript: "",
         // show input with query that filters the country list
-        queryInput: false
+        queryInput: false,
+        // query input placeholder
+        queryPlaceholder: ""
     };
     // https://en.wikipedia.org/wiki/List_of_North_American_Numbering_Plan_area_codes#Non-geographic_area_codes
     var regionlessNanpNumbers = [ "800", "822", "833", "844", "855", "866", "877", "880", "881", "882", "883", "884", "885", "886", "887", "888", "889" ];
@@ -393,7 +395,8 @@
                     if (this.options.queryInput) {
                         this.queryInput = this._createEl("input", {
                             "class": "iti__country-search iti__hide",
-                            "aria-disabled": "true"
+                            "aria-disabled": "true",
+                            placeholder: this.options.queryPlaceholder
                         });
                     }
                     if (this.preferredCountries.length) {
