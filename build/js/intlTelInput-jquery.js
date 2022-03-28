@@ -686,7 +686,6 @@
                     setTimeout(function() {
                         var w = _this8.countryList.offsetWidth;
                         _this8.queryInput.style.width = "".concat(w, "px");
-                        _this8.queryInput.style.height = "30px";
                     }, 1);
                 }
                 this.selectedFlag.setAttribute("aria-expanded", "true");

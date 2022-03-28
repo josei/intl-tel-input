@@ -682,7 +682,6 @@ class Iti {
       setTimeout(() => {
         const w = this.countryList.offsetWidth;
         this.queryInput.style.width = `${w}px`;
-        this.queryInput.style.height = '30px';
       }, 1);
     }
     this.selectedFlag.setAttribute('aria-expanded', 'true');
